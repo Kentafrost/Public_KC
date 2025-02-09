@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+# Private ServerからPublic Serverにアクセスできるよう設定
+
+#Mapping入れてみたパターン(基本はMapping入れた方が良い)
+Parameters:
+  # SSMから流用
+  DBUsername:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: db_username
+  DBPasswords:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: db_pw
+
+Mappings: 
+  vpc: 
+    cidrblock: 
+      ip: 172.10.0.0/16
+  
+  subnet:
+    cidrblock:
+      publicip: 172.10.1.0/24
+      privateip: 172.10.11.0/24
+      privateip2: 172.10.12.0/24
+
+  instance: 
+    region:
+      az: ap-southeast-2a
+      az2: ap-southeast-2b
+
+Resources:
+
+  ##*************RDSInstance*********
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DependsOn: PublicSecurityGroup
+    Properties:
+      DBName: testInstanceDB
+      AllocatedStorage: 20
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: 8.0.35
+
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPasswords
+      PubliclyAccessible: false
+      StorageType: gp2
+      Iops: 5
+      StorageEncrypted: true
+      # for Multi-region deployment
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups: 
+        - !Ref RDSSecurityGroup
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS instance
+      SubnetIds:
+        - !Ref PrivateSubnet
+        - !Ref PrivateSubnet2
+        # Add another private subnet in a different AZ for Multi-AZ setup
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: RDSSecurityGroup
+      Description: To connect RDS
+      GroupDescription: Allow access to RDS
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          # インスタンスのIPを抜き取って、/32をつける
+          CidrIp: !Join 
+          - ""
+          - [!GetAtt PublicInstance.PublicIp, "/32"]

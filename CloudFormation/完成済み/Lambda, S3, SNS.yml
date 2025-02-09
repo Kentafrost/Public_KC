@@ -1,0 +1,148 @@
+#S3バケットPUTで、Lambda関数でSNS Topicでメール発行される
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Default: "testcloudformation17013814"
+    Description: "Uppercase letter is not allowed"
+
+  SNSTopicName:
+    Type: String
+    Default: "TEST_CloudFormation_SNSTopic1321431"
+
+Resources:
+  
+  #SNSトピック作成
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint: "kentacho3@gmail.com"
+        Protocol: email
+      TopicName: !Ref SNSTopicName
+
+  #Lambda用IAMロール(SNSトピックアクセス用)
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      #信頼ポリシー
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+              #{AWS: arn:aws:iam::204806963442:role/test-switch}
+
+            Action:
+              - "sts:AssumeRole"
+      
+      #Permission Policy
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        #- arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole
+      RoleName: Lambda_Role
+
+  #Lambda function to publish SNS topic
+  Lambdafunc:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: S3_trigger_pattern
+      Description: "S3経由トリガー用"
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      #Memoryは128以上のみ可
+      MemorySize: 128
+      Role: !GetAtt LambdaIamRole.Arn
+      Timeout: 30
+      #Architectures: x86_64
+
+      Environment: 
+        Variables:
+          topic_arn: !Ref SNSTopic
+
+      #Publishing SNS Topic via Lambda Function
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import os
+          import datetime
+          client = boto3.client('sns')
+          sns_arn = os.environ['topic_arn']
+
+          def lambda_handler(event, context):
+            dt_now = datetime.datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')
+          
+            client.publish(
+              TopicArn=sns_arn,
+              Subject='Lambda SNS メール送信' + str(dt_now),
+              Message='SNSでメール送信済み' + str(dt_now)
+           )
+
+  #S3 Trigger
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Lambdafunc.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      #BucketArnを結合
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:aws:s3:::${S3Bucket}'
+
+  #S3PUT invokes Lamba function
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    #下記入れると従属エラーとなる
+    #DependsOn: "LambdaPermission"
+
+    Properties:
+      BucketName: !Ref S3BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+      #AccessControl: private
+
+      #以下いれるとエラー
+      #NotificationConfiguration:
+      #  LambdaConfigurations:
+      #  - Event: "s3:ObjectCreated:Put"
+      #    Function: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Lambdafunc}-OnDetectFunction'
+
+
+  #S3バケットでトリガーする設定のみうまくいってない。
+  #一旦依存関係のない状態（通知設定をしていない状態）でS3バケットを定義し、
+  #カスタムリソースを使用して、LambdaでS3バケットに通知設定を行う
+
+  #メインのLambdaと依存関係をつくる
+  CustomLambdatrigger:
+    Type: Custom::LambdaTrigger
+    DependsOn: LambdaPermission
+    Properties:
+      ServiceToken: !GetAtt CustomLambdaFunction.Arn
+      Bucket: !Ref S3Bucket
+      LambdaArn: !GetAtt Lambdafunc.Arn
+
+  CustomLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaIamRole.Arn
+      Code: 
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+
+          print("AAAA")
+
+      Runtime: python3.12
+      Timeout: 30

@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+#Mapping入れてみたパターン(基本はMapping入れた方が良い)
+Mappings: 
+  vpc: 
+    cidr_block: 
+      ip: 172.10.0.0/16
+  
+  ec2_instance: 
+    region:
+      az: "us-east-1a"
+
+Resources:
+  #ここから、EC2インスタンス作成
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap ["vpc", "cidr_block", ip]
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'  
+  
+  myIGW:
+    Type: AWS::EC2::InternetGateway
+
+  #VPCにIGW結合させる
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref myIGW
+
+  #Routetable
+  Routetable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  #ルートテーブル中のルート決定
+  myRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref Routetable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myIGW
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 172.10.0.0/24
+      AvailabilityZone: "us-east-1a"
+      Tags:
+        - Key: stack
+          Value: test
+  
+  # ルートテーブルをサブネットに関連付け
+  AssoPubSubRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref Routetable
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-0bb84b8ffd87024d8
+      InstanceType: t2.micro
+      #KeyName: "ec2-public-key2.pem.pem"
+    
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnet 
+          GroupSet: 
+            - !Ref EC2SG
+
+  #Security Group
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: TEST_CloudFormation
+      GroupDescription: TEST for CloudFormation
+      VpcId: !Ref Vpc
+
+      #アウトバウンド
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+
+      #インバウンド
+      SecurityGroupIngress:
+        - CidrIp: 120.75.73.55/32
+          FromPort: 22
+          ToPort: 443
+          IpProtocol: tcp      
+  
+  #S3バケット作成
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "testcloudformation1241252322"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Topic: !Ref SNSTopic
+            Event: 's3:GetObject'
+
+      ObjectLockEnabled: true
+
+  #SNSトピック作成
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: "kentacho3@gmail.com"
+          Protocol: email
+      TopicName: "LogsTopic"

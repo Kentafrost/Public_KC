@@ -1,0 +1,264 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  MyIpAddress:
+    Type: String
+    Description: Your current IP address
+    Default: 106.176.63.221
+
+  Vpc:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: VPC
+  SSMKey:
+    Description: Name of parameter store which contains the json configuration of CWAgent.
+    Type: String
+    Default: AmazonCloudWatch-DefaultLinuxConfigCloudFormation
+
+# Private ServerからPublic Serverにアクセスできるよう設定
+Mappings:
+  vpc:
+    cidrblock:
+      ip: 172.10.0.0/16
+  subnet:
+    cidrblock:
+      publicip: 172.10.1.0/24
+      privateip: 172.10.11.0/24
+      privateip2: 172.10.12.0/24
+  instance:
+    region:
+      az1: ap-southeast-2a
+      az2: ap-southeast-2b
+
+Resources:
+  # roleとセット(roleのコンテナに相当) VPCエンドポイント入れる
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2Role
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy # CWAgentで監視用ポリシー
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore # SSMパラメータに書き込む用ポリシー
+      Policies:
+        - PolicyName: S3AndDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::test4201979723197
+                  - arn:aws:s3:::test4201979723197/*
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: arn:aws:dynamodb:*:*:table/test-dynamoDB
+                # To monitor log using CloudWatch Agents
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DescribeLogStreams"
+                Resource: "arn:aws:logs:*:*:*"
+
+  # For CWAgent Setting
+  CWAgentConfig:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Ref SSMKey
+      Type: String # Metrics_collectedで括られてる部分が保存先のMetricLogGroup(コンソール上)
+      Value: |
+        {
+          "agent": {
+            "metrics_collection_interval": 60,
+            "run_as_user": "System"
+          },
+          "metrics": {
+            "metrics_collected": {
+              "CPU": {
+                "measurement": [
+                  {"name": "% Idle Time", "unit": "Percent"},
+                  {"name": "% Interrupt Time", "unit": "Percent"},
+                  {"name": "% User Time", "unit": "Percent"},
+                  {"name": "% Processor Time", "unit": "Percent"}
+                ],
+                "resources": ["*"],
+                "totalcpu": true
+              },
+              "Memory": {
+                "measurement": [
+                  {"name": "% Committed Bytes In Use", "unit": "Percent"},
+                  {"name": "Available Bytes", "unit": "Bytes"},
+                  {"name": "Committed Bytes", "unit": "Bytes"}
+                ]
+              },
+              "LogicalDisk": {
+                "measurement": [
+                  {"name": "% Free Space", "unit": "Percent"},
+                  {"name": "Free Megabytes", "unit": "Megabytes"}
+                ],
+                "resources": ["*"]
+              }
+            },
+            "aggregation_dimensions": [["InstanceId"]]
+          },
+          "logs": {
+            "logs_collected": {
+              "windows_events": {
+                "collect_list": [
+                  {
+                    "event_name": "System",
+                    "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+                    "log_group_name": "/aws/ec2/windows/system",
+                    "log_stream_name": "{instance_id}"
+                  },
+                  {
+                    "event_name": "Application",
+                    "event_levels": ["INFORMATION", "WARNING", "ERROR", "CRITICAL"],
+                    "log_group_name": "/aws/ec2/windows/application",
+                    "log_stream_name": "{instance_id}"
+                  }
+                ]
+              }
+            }
+          }
+        }
+
+  #Security Group
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Public_SecurityGroup
+      GroupDescription: Public Security Groups Setting
+      VpcId: !Ref Vpc
+
+      #アウトバウンド
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+          # RDS接続用
+          #IpProtocol: tcp
+          #FromPort: 3306
+          #ToPort: 3306
+          #DestinationSecurityGroupId: !Ref RDSSecurityGroup
+
+          #インバウンド
+      SecurityGroupIngress: # from local PC
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 3389
+          CidrIp: !Sub "${MyIpAddress}/32" # MyIPをコマンドで指定することとした
+
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 3389
+          SourceSecurityGroupId: !Ref PrivateSecurityGroup # to Private Subnet IP
+
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PrivateSecurityGroup
+      GroupDescription: To be able to access only Public and VPC Endpoints allocated services
+      VpcId: !Ref Vpc
+      #アウトバウンド
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+      #インバウンド
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 3389
+          CidrIp: !Sub "${MyIpAddress}/32" # MyIPをコマンドで指定することとした
+
+        - FromPort: 22
+          ToPort: 3389
+          IpProtocol: tcp
+          CidrIp: !FindInMap ["subnet", "cidrblock", "publicip"] # Security Groupを指定すると重複参照エラー出る
+
+  PrivateKeyPair:
+    Type: "AWS::EC2::KeyPair"
+    Properties:
+      KeyName: KeyPair_PrivateWindows
+
+  PublicKeyPair:
+    Type: "AWS::EC2::KeyPair"
+    Properties:
+      KeyName: KeyPair_PublicWindows
+
+  # ここからSSM Parameterに登録
+  SSMEC2Instanceprofile:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "EC2InstanceProfile"
+      Type: String
+      Value: !Ref EC2InstanceProfile
+
+  SSMEC2InstanceRole:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "EC2InstanceIAMRole"
+      Type: String
+      Value: !Ref EC2Role
+
+  SSMCWLogsConfig:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "CWLogsConfig"
+      Type: String
+      Value: !Ref CWAgentConfig
+
+  SSMPublicSecurityGroup:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PublicSecurityGroup"
+      Type: String
+      Value: !Ref PublicSecurityGroup
+
+  SSMPublicKey:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PublicKeypair"
+      Type: String
+      Value: !Ref PublicKeyPair
+
+  SSMPrivateSecurityGroup:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PrivateSecurityGroup"
+      Type: String
+      Value: !Ref PrivateSecurityGroup
+
+  SSMPrivateKey:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PrivateKeypair"
+      Type: String
+      Value: !Ref PrivateKeyPair

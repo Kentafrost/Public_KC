@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+#Mapping入れてみたパターン(基本はMapping入れた方が良い)
+Mappings: 
+
+Resources:
+  #S3バケット作成
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "testcloudformation1241252322"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Topic: !Ref SNSTopic
+            Event: 's3:GetObject'
+
+      ObjectLockEnabled: true

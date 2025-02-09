@@ -1,0 +1,44 @@
+# やりたいこと：CPU使用率などでSNSトピックが発行されるトリガー作る。
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  SNSTopic:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SNSTopicForStoppingEC2
+
+  PublicEC2Instance:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PublicEC2Instance
+
+Mappings:
+  CW:
+    cpu:
+      period: 30
+      evaluationperiod: 1
+      threhold: 30
+  #MyEC2PublicInstance:
+  #  Type: AWS::SSM::Parameter::Value<String>
+  #  Default: PublicEC2Instance
+  #MyEC2PrivateInstance:
+  #  Type: AWS::SSM::Parameter::Value<String>
+  #  Default: PrivateEC2Instance
+
+Resources:
+  CPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "Alarm if CPU utilization exceeds ${Threhold}"
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: !FindInMap ["CW", "cpu", "period"]
+      EvaluationPeriods: !FindInMap ["CW", "cpu", "evaluationperiod"]
+      Threshold: !FindInMap ["CW", "cpu", "threhold"]
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions: #どのインスタンスか
+        - Name: InstanceId
+          Value: !Ref PublicEC2Instance #調整必要
+      # アラーム発生した際に、Lambda関数に送る
+      AlarmActions:
+        - !Ref SNSTopic #SNSでメール飛ばしつつ、インスタンス全部停止させる

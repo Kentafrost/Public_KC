@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_c4435da4ebf03b129a617207bb2a3d26 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_c4435da4ebf03b129a617207bb2a3d26" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_c4435da4ebf03b129a617207bb2a3d26 = L.map(
+                "map_c4435da4ebf03b129a617207bb2a3d26",
+                {
+                    center: [35.6828387, 139.7594549],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 14,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_8a889a3e29f45aa86eadbbc6f5750d9f = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_8a889a3e29f45aa86eadbbc6f5750d9f.addTo(map_c4435da4ebf03b129a617207bb2a3d26);
+        
+    
+            var marker_c6b15f0ae2a8d96f4aa4dd5add0eafb4 = L.marker(
+                [35.6828387, 139.7594549],
+                {
+}
+            ).addTo(map_c4435da4ebf03b129a617207bb2a3d26);
+        
+    
+            var icon_580e130d65d9ba67cd83d3f1640c66c5 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+            marker_c6b15f0ae2a8d96f4aa4dd5add0eafb4.setIcon(icon_580e130d65d9ba67cd83d3f1640c66c5);
+        
+    
+        var popup_fca63be9fab6429c7785f0509abfb85b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_c4f56210085821569b78e78383e0f72b = $(`<div id="html_c4f56210085821569b78e78383e0f72b" style="width: 100.0%; height: 100.0%;">東京タワー</div>`)[0];
+                popup_fca63be9fab6429c7785f0509abfb85b.setContent(html_c4f56210085821569b78e78383e0f72b);
+            
+        
+
+        marker_c6b15f0ae2a8d96f4aa4dd5add0eafb4.bindPopup(popup_fca63be9fab6429c7785f0509abfb85b)
+        ;
+
+        
+    
+</script>
+</html>

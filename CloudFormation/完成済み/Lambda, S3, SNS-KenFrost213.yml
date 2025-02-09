@@ -1,0 +1,124 @@
+#S3バケットPUTで、Lambda関数でSNS Topicでメール発行される
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Default: "testcloudformation17013814"
+    Description: "Uppercase letter is not allowed"
+
+  SNSTopicName:
+    Type: String
+    Default: "TEST_CloudFormation_SNSTopic1321431"
+
+Resources:
+  
+  #SNSトピック作成
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint: "kentacho3@gmail.com"
+        Protocol: email
+      TopicName: !Ref SNSTopicName
+
+  #Lambda用IAMロール(SNSトピックアクセス用)
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      #信頼ポリシー
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+              #{AWS: arn:aws:iam::204806963442:role/test-switch}
+
+            Action:
+              - "sts:AssumeRole"
+      
+      #Permission Policy
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        #- arn:aws:iam::aws:policy/AWSLambdaBasicExecutionRole
+      RoleName: Lambda_Role
+
+  #Lambda function to publish SNS topic
+  Lambdafunc:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: S3_trigger_pattern
+      Description: "S3経由トリガー用"
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      #Memoryは128以上のみ可
+      MemorySize: 128
+      Role: !GetAtt LambdaIamRole.Arn
+      Timeout: 30
+      #Architectures: x86_64
+
+      Environment: 
+        Variables:
+          topic_arn: !Ref SNSTopic
+
+      #Publishing SNS Topic via Lambda Function
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import os
+          import datetime
+
+          def lambda_handler(event, context):
+              s3 = boto3.client('s3')
+              sns = boto3.client('sns')
+              
+              # Get the bucket name and key for the new object
+              bucket = event['Records'][0]['s3']['bucket']['name']
+              key = event['Records'][0]['s3']['object']['key']
+              
+              # Get the object size
+              object_size = event['Records'][0]['s3']['object']['size']
+              
+              # Format the message
+              dt_now = datetime.datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')
+              message = f"新しいファイルがS3にアップロードされました。\n"
+              message += f"バケット名: {bucket}\n"
+              message += f"ファイル名: {key}\n"
+              message += f"ファイルサイズ: {object_size} bytes\n"
+              message += f"アップロード時間: {dt_now}"
+              
+              # Send SNS message
+              sns.publish(
+                  TopicArn=os.environ['topic_arn'],
+                  Subject='S3 ファイルアップロード通知',
+                  Message=message
+              )
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('Email sent successfully!')
+              }
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !GetAtt Lambdafunc.Arn
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Lambdafunc
+      Action: 'lambda:InvokeFunction'
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:aws:s3:::${S3Bucket}'

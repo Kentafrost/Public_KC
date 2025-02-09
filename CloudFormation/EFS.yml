@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+Parameters:
+  VPC:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: VPC
+
+  PrivateSecurityGroup:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PublicSecurityGroup
+
+  PrivateSubnet:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateSubnet
+
+Resources:
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: EFS_Security
+      GroupDescription: Security group for EFS
+      VpcId: !Ref VPC
+      #アウトバウンド
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref PrivateSecurityGroup # Your EC2's security group
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+      ThroughputMode: bursting
+      #Tags:
+      #  - Key: Name
+      #    Value: MyEFSFileSystem
+
+  EFSMountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: !Ref PrivateSubnet # Your EC2's subnet
+      SecurityGroups:
+        - !Ref EFSSecurityGroup

@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "constructing CloudFormation stacks to create Lambda function invoked by EventBridge"
+
+#API Gatewayのパラメータを入れることで、
+Parameters:
+  LambdaName:
+    Type: String
+    Default: "test_lambdaAAA"
+
+  LambdaRoleName:
+    Type: String
+    Default: "test_lambda_role"
+
+  SNSTopicName:
+    Type: String
+    Default: "topic_test"
+
+Resources:
+  #Lambda用IAMロール(SNSトピックアクセス用に許可する)
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref LambdaRoleName
+      
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+
+
+  #Lambda作成用(APIレスポンス用にコードを調整)
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaName
+      Runtime: python3.12
+      Description: "サブスクリプションフィルター用Lambda"
+      Handler: index.lambda_handler
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Timeout: 300
+      #Architectures: x86_64
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import os
+          import datetime
+          client = boto3.client('sns')
+          sns_arn = os.environ['topic_arn']
+          print(sns_arn)
+
+          def lambda_handler(event, context):
+            dt_now = datetime.datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')
+
+            #client.publish{
+            #  TopicArn: sns_arn,
+            #  Subject: 'Lambda SNS メール送信' + str(dt_now),
+            #  Message: 'SNSでメール送信済み\n確認できました？\n' + str(dt_now)
+            #}
+
+      Environment:
+        Variables:
+          topic_arn: !Ref SNSTopic
+
+  #LambdaでEventBridgeをトリガーにして、Lambda起動する許可を記載
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      EventBusName: default
+      Name: eventbridge-rule
+      ScheduleExpression: cron(0/2 * * * ? *)
+      State: ENABLED
+      Targets: 
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: LambdaFunction
+
+  #SNSトピック作成
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: "kentacho3@gmail.com"
+          Protocol: email
+      TopicName: !Ref SNSTopicName

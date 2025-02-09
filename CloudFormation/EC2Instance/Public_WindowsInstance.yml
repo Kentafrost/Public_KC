@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+Parameters:
+
+  PublicSubnet:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PublicSubnet
+
+  # Parts参照
+  EC2InstanceProfile:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: EC2InstanceProfile
+  CWLogsConfig:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: CWLogsConfig
+  PublicKeyPair:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PublicKeypair
+
+  PublicSecurityGroup:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PublicSecurityGroup
+  PrivateSecurityGroup:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateSecurityGroup
+
+# Private ServerからPublic Serverにアクセスできるよう設定
+Mappings:
+  vpc:
+    cidrblock:
+      ip: 172.10.0.0/16
+  subnet:
+    cidrblock:
+      publicip: 172.10.1.0/24
+      privateip: 172.10.11.0/24
+      privateip2: 172.10.12.0/24
+  instance:
+    region:
+      az1: ap-southeast-2a
+      az2: ap-southeast-2b
+
+Resources:
+  PublicInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !FindInMap ["instance", "region", "az1"]
+      ImageId: ami-0d6560f3176dc9ec0
+      # ami-024781a6c1dcb2253 #Windows Server
+      # ami-0531260404385da58(For DataSync Agent)
+      InstanceType: t2.micro
+      KeyName: !Ref PublicKeyPair
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet
+          GroupSet:
+            - !Ref PublicSecurityGroup
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      # CW Agent Profiles Settings
+      UserData: !Base64 
+        Fn::Sub:
+          - |
+            <script>
+            mkdir C:\Downloads\Amazon\AmazonCloudWatchAgent
+            powershell -Command "(New-Object Net.WebClient).DownloadFile('https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi','C:\Downloads\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent.msi')"
+            C:\Downloads\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent.msi
+            powershell -Command "C:\'Program Files'\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1 -a fetch-config -m ec2 -c ssm:${ssmkey} -s"
+            cfn-init.exe -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
+            cfn-signal.exe -e %errorlevel% --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+             </script>
+          - ssmkey: !Ref CWLogsConfig
+          
+  # マルチAZ対応
+
+  # 作成したリソースがSSM Parameter Storeに登録されるよう記載
+  SSMPublicEC2Instance:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PublicEC2Instance"
+      Type: String
+      Value: !Ref PublicInstance

@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+Mappings: 
+  cloudwatch: 
+    alarm_description:
+      value: "Stop alarm"
+    alarm_name:
+      value: "test_cloudformation"
+    comparison:
+      value: "GreaterThanThreshold"
+    alarm_actions:
+      value: "arn:aws:automate:us-east-1:ec2:stop"
+
+Resources:
+  cloudwatch:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      AlarmName: !FindInMap [cloudwatch, alarm_name, value]
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      AlarmDescription: !FindInMap [cloudwatch, alarm_description, value]
+
+      Period: 300
+      Threshold: 50      
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      ComparisonOperator: !FindInMap [cloudwatch, comparison, value]
+      Unit: Percent #Metricの単位(一つのみのMetricの場合のみ指定)
+      Statistic: "Average"
+      ThresholdMetricId: ad1
+      TreatMissingData: "ignore"
+      ActionsEnabled: True
+      AlarmActions: 
+        - !FindInMap [cloudwatch, alarm_actions, value]
+      Dimensions: 
+        - Name: "Instanceid"
+          Value: !Ref InstanceId
+      Tags: 
+        - Key: "cloud-formation-stack"
+          Value: "test"
+
+      #Actions taken in the status, InsufficientData State
+    
+      #InsufficientDataActions: 
+      #  - String
+      
+      #Metrics: 
+      #  - MetricDataQuery
+
+      #OK状態になった場合に実行するアクション指定(ARNで指定する)
+      #OKActions:

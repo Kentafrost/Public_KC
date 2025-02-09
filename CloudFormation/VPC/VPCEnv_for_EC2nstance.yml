@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+# Private ServerからPublic Serverにアクセスできるよう設定
+Mappings: 
+  vpc: 
+    cidrblock: 
+      ip: 172.10.0.0/16
+  
+  subnet:
+    cidrblock:
+      publicip: 172.10.1.0/24
+      privateip: 172.10.11.0/24
+      privateip2: 172.10.12.0/24
+
+  instance: 
+    region:
+      az: ap-southeast-2a
+      az2: ap-southeast-2b
+
+Resources:
+  #ここから、EC2インスタンス作成
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap ["vpc", "cidrblock", ip]
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: stack_vpc
+          Value: test
+  
+  myIGW:
+    Type: AWS::EC2::InternetGateway
+
+  #VPCにIGW結合させる
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref myIGW
+
+  #Routetable
+  PublicRoutetable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  #ルートテーブル中のルート決定
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRoutetable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myIGW
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap ["subnet", "cidrblock", "publicip"]
+      AvailabilityZone: !FindInMap ["instance", "region", "az"]
+      Tags:
+        - Key: stack
+          Value: test
+          
+  # ルートテーブルをサブネットに関連付け
+  AssoPubSubRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRoutetable
+
+  # NAT GWを作成し、Publicに連携
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATEIP.AllocationId
+      SubnetId: !Ref PublicSubnet
+
+  NATEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: !Ref Vpc
+
+# --------------------ここからPrivate--------------------
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap ["subnet", "cidrblock", "privateip"]
+      AvailabilityZone: !FindInMap ["instance", "region", "az"]
+      Tags:
+        - Key: Subnet
+          Value: PrivateSubnet
+
+  # いくつかのサブネットに分ける必要あり
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap ["subnet", "cidrblock", "privateip2"]
+      AvailabilityZone: !FindInMap ["instance", "region", "az2"]
+      Tags:
+        - Key: Subnet
+          Value: PrivateSubnet2
+
+  #Routetable(VPCに作成)
+  PrivateRoutetable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+
+  # ルートテーブル関連付け
+  AssoPrivSubRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRoutetable 
+
+  #ルートテーブル中のルート決定 NAT GWと導通させる
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRoutetable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway # NAT GWと連携
+
+  #*************Endpoint*************
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - 's3:*'
+            Resource:
+              - '*'
+      RouteTableIds:
+        - !Ref PrivateRoutetable
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref Vpc
+
+  DynamoDBEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - 'dynamodb:*'
+            Resource:
+              - '*'
+      RouteTableIds:
+        - !Ref PrivateRoutetable
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.dynamodb'
+      VpcId: !Ref Vpc
+
+  EC2Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2'
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref PrivateSubnet
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+
+  # Security Group for Interface Endpoints
+  EndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for VPC Interface Endpoints
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !FindInMap ["vpc", "cidrblock", "ip"]
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  # 作成したリソースがSSM Parameter Storeに登録されるよう記載
+  SSMVpc:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "VPC"
+      Type: String
+      Value: !Ref Vpc
+
+  SSMPublicSubnet:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PublicSubnet"
+      Type: String
+      Value: !Ref PublicSubnet
+
+  SSMPrivateSubnet:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PrivateSubnet"
+      Type: String
+      Value: !Ref PrivateSubnet
+
+  SSMPrivateSubnet2:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PrivateSubnet2"
+      Type: String
+      Value: !Ref PrivateSubnet2
+
+  SSMEC2Endpoint:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "EC2Endpoint"
+      Type: String
+      Value: !Ref EC2Endpoint
+
+  SSMEndpointSecurityGroup:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "EndpointSecurityGroup"
+      Type: String
+      Value: !Ref EndpointSecurityGroup

@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "test of constructing CloudFormation stacks"
+
+Parameters:
+  Vpc:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: VPC
+  PrivateSubnet:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateSubnet
+  PrivateSubnet2:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateSubnet2
+
+  # Parts参照
+  EC2InstanceProfile:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: EC2InstanceProfile
+  CWLogsConfig:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: CWLogsConfig
+  PrivateSecurityGroup:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateSecurityGroup
+
+  PrivateKeyPair:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: PrivateKeypair
+
+# Private ServerからPublic Serverにアクセスできるよう設定
+Mappings: 
+  vpc: 
+    cidrblock: 
+      ip: 172.10.0.0/16
+  subnet:
+    cidrblock:
+      publicip: 172.10.1.0/24
+      privateip: 172.10.11.0/24
+      privateip2: 172.10.12.0/24
+  instance: 
+    region:
+      az1: ap-southeast-2a
+      az2: ap-southeast-2b
+
+Resources:
+  # Private Instance
+  PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !FindInMap ["instance", "region", "az1"]
+      ImageId: ami-024781a6c1dcb2253 # Windowsにする
+      InstanceType: t2.micro
+      KeyName: !Ref PrivateKeyPair
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData: !Base64
+        Fn::Sub:
+          - |
+            <script>
+            mkdir C:\Downloads\Amazon\AmazonCloudWatchAgent
+            powershell -Command "(New-Object Net.WebClient).DownloadFile('https://s3.amazonaws.com/amazoncloudwatch-agent/windows/amd64/latest/amazon-cloudwatch-agent.msi','C:\Downloads\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent.msi')"
+            C:\Downloads\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent.msi
+            powershell -Command "C:\'Program Files'\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1 -a fetch-config -m ec2 -c ssm:${ssmkey} -s"
+            cfn-init.exe -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
+            cfn-signal.exe -e %errorlevel% --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+             </script>
+          - ssmkey: !Ref CWLogsConfig
+
+      # Subnet, SecurityGroup
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          DeviceIndex: 0
+          SubnetId: !Ref PrivateSubnet
+          GroupSet:
+            - !Ref PrivateSecurityGroup
+
+  SSMPrivateEC2Instance:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: "PrivateEC2Instance"
+      Type: String
+      Value: !Ref PrivateInstance

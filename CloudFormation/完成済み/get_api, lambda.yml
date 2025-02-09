@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Lambda function integrated with HTTP API"
+
+#HTTP APIとLambda関数の結合をし、URI経由でLambda処理結果を確認できるように設定
+
+#API Gateway, Lambdaのパラメータ
+Parameters:
+  apiGatewayName:
+    Type: String
+    Default: my-api
+
+  apiGatewayStageName:
+    Type: String
+    Default: test_stage_name
+
+  LambdaName:
+    Type: String
+    Default: "test_lambda"
+
+Resources:
+  #Lambda関数(APIレスポンス用)
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaName
+      Description: "Lambda function integrated with HTTP API"
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Timeout: 300
+      #Architectures: x86_64
+
+      #ハンドリングされてないと、HTTP API経由で文字出ない
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import os
+          import datetime
+
+          def lambda_handler(event, context):
+            return {
+              'isBase64Encoded':False,
+              'statusCode':200,
+              'headers':{},
+              'body':"Integration with HTTP API is successful."
+              }
+
+  #Lambda用IAMロール(SNSトピックアクセス用)
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      RoleName: LambdaRole
+
+  # API GW
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Description: Example API Gateway
+      ProtocolType: HTTP
+      Name: !Ref apiGatewayName
+      #Target: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}/invocations
+
+
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: !Ref apiGatewayStageName
+      AutoDeploy: True
+      
+  #LambdaとHTTPAPIを統合
+  HttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      Description: "HTTP integration test"
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      
+      #ここでLambda関数と結合するようARNで指定
+      IntegrationUri: !GetAtt LambdaFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  #Lambdaのトリガー設定
+  lambdaApiGatewayInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/test"
+
+
+  #URIのルートを決めてる(InvokeFunctionで、Arnに/testのついたURIを指定することで、目的のAPIにルーティングされる)
+  HttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: GET /test # Lambdaのパス指定
+      AuthorizationType: NONE
+      Target: !Sub "integrations/${HttpApiIntegration}"
+
+
+#API URLを取得したい
+Outputs:
+  apiGatewayInvokeURL:
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${apiGatewayStageName}
+
+  lambdaArn:
+    Value: !GetAtt LambdaFunction.Arn

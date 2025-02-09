@@ -1,0 +1,30 @@
+・CloudFormation、EC2 Image Builder練習する。
+⇒t4g.nanoにする(単純に安い)
+　AMIに設定。
+
+image list(OS関連) with component, infrastructure(subnet, security groupなど) 
+⇒image pipeline ⇒ image
+
+
+APIメモ
+
+・REST API
+・HTTP API
+・Web Socket API
+
+2種類のAPI Gatewayをそれぞれ、yaml形式で指定できる
+
+API Gateway v1：RestAPI
+API Gateway v2：HTTP API, WEB Socket API
+
+
+作成案：
+①：Lambda関数をECRレポジトリから取得するなど、何らかの方法で持ってきたdockerイメージを用いて作成する。
+　　(dockerfileの処理：python, requirement.txtのファイルをLambda関数に移す)
+　⇒ここまでは完了した。
+
+
+②：REST APIでセキュリティにAPI Keyを指定することでAPI Keyをcurl -Hコマンド等で渡さないと起動できないようにする。
+③：①で作成したLambda関数と、②で作成したREST APIを結合する。
+
+④：ローカル環境から、Terminalでcurl -HコマンドでAPI Keyを渡しつつ、API起動してみる。

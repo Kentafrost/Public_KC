@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Constructing DynamoDB"
+#作成完了
+
+Parameters:
+  DynamoDBname:
+    Type: String
+    Default: test-dynamoDB
+
+  PartitionKeyName:
+    Type: String
+    Default: name
+
+  SortKeyName:
+    Type: String
+    Default: sex
+
+  LSIName:
+    Type: String
+    Default: subject
+
+Resources:
+  DynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+
+      #SがString, NがNumber KeySchema(Partition Key, Sort Keyで定義しているものをここに記載)
+      AttributeDefinitions:
+        -
+          AttributeName: !Ref PartitionKeyName
+          AttributeType: "S"
+
+        -
+          AttributeName: !Ref SortKeyName
+          AttributeType: "S"
+
+        -
+          AttributeName: "subject"
+          AttributeType: "S"
+
+      #HASHがPartition Key, RANGEがSort Key
+      KeySchema:
+        -
+          AttributeName: !Ref PartitionKeyName
+          KeyType: "HASH"
+
+        -
+          AttributeName: !Ref SortKeyName
+          KeyType: "RANGE"
+
+      # LSI
+      LocalSecondaryIndexes: 
+        -
+          IndexName: !Ref LSIName
+          KeySchema: 
+            - 
+              #HASHは上記で定義したものと同一のものを指定
+              AttributeName: !Ref PartitionKeyName
+              KeyType: "HASH"
+
+            -
+              AttributeName: "subject"
+              KeyType: "RANGE"
+          Projection: # 射影
+            NonKeyAttributes:
+              - "point"
+              - !Ref SortKeyName
+            ProjectionType: "INCLUDE"
+
+      #GSI
+      GlobalSecondaryIndexes: 
+        - 
+          IndexName: "myGSI"
+          KeySchema: 
+            - 
+              AttributeName: !Ref PartitionKeyName
+              KeyType: "HASH"
+            - 
+              AttributeName: "subject"
+              KeyType: "RANGE"
+          Projection: # 射影
+            NonKeyAttributes: 
+              - "point"
+              - !Ref SortKeyName
+            ProjectionType: "INCLUDE"
+          
+          #ProvisionedThroughput: 
+          #  ReadCapacityUnits: "3"
+          #  WriteCapacityUnits: "3"
+          #ProvisionedThroughput: 
+          #  ReadCapacityUnits: "3"
+          #  WriteCapacityUnits: "3"
+      TableName: !Ref DynamoDBname
+      BillingMode: PAY_PER_REQUEST #従量課金か、予約したもの(Provisionedか)
+
+      #ProvisionedThroughput:
+        #ReadCapacityUnits: 0
+        #WriteCapacityUnits: 0
+
+      # DAX入れるとか...
+
+#Outputに追加できるオプションない?
+Outputs:
+  DynamoDBArn:
+    Description: !Sub "作成したDynamoDB名_${DynamoDBname}"
+    Value: !GetAtt DynamoDB.Arn
