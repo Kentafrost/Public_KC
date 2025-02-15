@@ -1,0 +1,42 @@
+@charset "utf-8";
+
+
+/*左端にユーザー名、ホームページ画面入れる*/
+.common {
+    background-color: antiquewhite;
+    padding-top: 5px;
+    padding-right: 10px;
+    padding-bottom: 2px;
+    /*文字を太字にするか? text-align:文字をどちらかの方向に... border*/
+    font-weight: bold;
+    text-align: left;
+    width: 15em;
+    border: solid;
+}
+
+/*左端にタイトル*/
+.explaination {
+    background-color: aquamarine;
+    text-align: left;
+    width: 15em;
+    border: solid;
+}
+
+.abstract {
+    background-color: lightcyan;
+}
+
+.url_list {
+    background-color: lightcyan;
+    text-align: left;
+    width: 25em;
+    border: solid;
+}
+
+.robot_name {
+    background-color: lightcyan;
+    border: solid;
+    text-align: left;
+    width: 70em;
+}
+/*右端にリスト化したURL*/

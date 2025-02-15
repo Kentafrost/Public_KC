@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+
+<!--CSSファイルはstatic/css/傘下に置く-->
+<head>
+    <meta charset="UTF-8">
+    <link 
+        rel="stylesheet" 
+        href="{{url_for('static', filename='css/color.css')}}"
+    />
+
+    <title>{{ title }}</title>
+</head>
+
+
+<body>
+    <p>User名: {{name}} </p>
+    <!--ブロックはblock.htmlから参照-->
+    <a href="/{{name}}">ホーム画面に戻ります。</a>
+
+    <!--歴史解説部分-->
+
+    <!--画面推移できるようなボタン入れる。最初のページを作成する必要あり。HTML内で他のページにルーティングされるようにするのが基本か-->
+
+    <div class="container">
+         <h3><font color="green">参照サイトのURL</h3>
+
+            <!--表を入れる練習-->
+            <div class="references">
+                <ul> 
+                    <li><h4><a href="https://www.town.kikonai.hokkaido.jp/tourism/history/boshin1/"</a>URL<h4></li>
+                    <li><h4><a href="https://www.homemate-research-junior-high-school.com/useful/20100_junio_study/2_history/meiji/"</a>URL<h4></li>
+                </ul>
+            </div>
+        
+            <h2 id="table">URLテーブル</h2>
+        
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>タイトル</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>戊辰戦争1</td>
+                            <td>
+                                <a href="https://www.town.kikonai.hokkaido.jp/tourism/history/boshin1/" target="_blink"
+                                >URL</a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>2</td>
+                            <td>戊辰戦争2</td>
+                            <td>
+                                <a href="https://www.homemate-research-junior-high-school.com/useful/20100_junio_study/2_history/meiji/" target="_blink"
+                                >URL</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!--container-table-->
+
+</body>
+</html>

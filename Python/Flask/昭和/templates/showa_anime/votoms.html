@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+
+<!--CSSファイルはstatic/css/傘下に置く-->
+<head>
+    <meta charset="UTF-8">
+    <link 
+        rel="stylesheet" 
+        href="{{url_for('static', filename='css/showa_anime_explanation.css')}}"
+    />
+
+    <title>{{ title }}</title>
+</head>
+
+
+<body>
+    <p>User名: {{name}} </p>
+    <!--ブロックはblock.htmlから参照-->
+    <a href="/{{name}}">ホーム画面に戻ります。</a>
+
+    <!--歴史解説部分-->
+    {% block block_votoms %} {% endblock %}
+
+
+     <!--他ページのURLをまとめてリスト化しておく(右揃え)-->
+     <br>以下、別URLの解説サイトのURL</br>
+
+     <br>
+         <div class="url_list">
+         <li>
+             <a href="/votoms"> 装甲機兵ボトムズ </a>
+             <a href="/yamato"> 宇宙戦艦ヤマト </a>
+         </li>
+         </div>
+     </br>
+
+</body>
+</html>

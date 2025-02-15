@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja">
+
+<!--CSSファイルはstatic/css/傘下に置く-->
+<head>
+    <meta charset="UTF-8">
+    <link 
+        rel="stylesheet" 
+        href="{{url_for('static', filename='css/color.css')}}"
+    />
+
+    <title>{{ title }}</title>
+</head>
+
+<body>
+    <p>User名: {{name}} </p>
+    <!--ブロックはblock.htmlから参照-->
+    <a href="/{{name}}">ホーム画面に戻ります。</a>
+
+    <!--挨拶部分-->
+    <h3>お疲れ様です。</h3>
+    <p> こんにちは。</p>
+
+    <!--下記で通った-->
+    <video controls src="static/video/soudayo.mp4">あああ</video>
+
+</body>
+</html>

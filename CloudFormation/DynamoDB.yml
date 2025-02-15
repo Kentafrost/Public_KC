@@ -96,10 +96,6 @@ Resources:
       #ProvisionedThroughput:
         #ReadCapacityUnits: 0
         #WriteCapacityUnits: 0
-
-      # DAX入れるとか...
-
-#Outputに追加できるオプションない?
 Outputs:
   DynamoDBArn:
     Description: !Sub "作成したDynamoDB名_${DynamoDBname}"

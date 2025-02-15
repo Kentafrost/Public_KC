@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+
+<!--CSSファイルはstatic/css/傘下に置く-->
+<head>
+    <meta charset="UTF-8">
+    <link 
+        rel="stylesheet" 
+        href="{{url_for('static', filename='css/color.css')}}"
+    />
+
+    <title>{{ title }}</title>
+</head>
+
+<body>
+
+<!--ブロックはblock.htmlから参照-->
+
+<!--挨拶部分-->
+<h3>お疲れ様です。</h3>
+<p> こんにちは。{{ name }}さん。
+    <br><big><font color="red">ゆっくりしていってね!!! </big></br>
+</p>
+</font>
+
+<img src="static/images/yukkuri.jpg" alt="サンプル画像が表示されます。">
+
+<!--画面移行するボタンをいくつか-->>
+<h4>以下、サイトのURLです。</h4>
+    <ul>
+        <li><a href="/edo">江戸時代</a></li>
+        <li><a href="/history_meiji_restoration">明治維新</a></li>
+        <li><a href="/video">動画まとめ</a></li>
+    </ul>
+
+
+<!--送信フォーム-->
+<br><form action="#" method="post">
+    <div class="form-sending">
+        <label for="title">アンケート</label>
+        <input type="text" class="form-control" name="title" id="title">
+    </div>
+
+    <button type="submit">送信</button>
+</form>
+</br>
+
+
+<!--宛先-->
+<div class="sending_form">
+    <address>
+        <br>このホームページの問い合わせ先は下記にお願いいたします。</br>
+        <a href=.co.jp>問い合わせ先 </a>
+    </address>
+</div>
+
+</body>
+</html>

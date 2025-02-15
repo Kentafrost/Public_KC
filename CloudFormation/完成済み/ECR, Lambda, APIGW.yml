@@ -66,7 +66,6 @@ Resources:
       Name: !Ref apiGatewayName
       #Target: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}/invocations
 
-
   HttpApiStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:

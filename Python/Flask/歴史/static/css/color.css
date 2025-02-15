@@ -1,0 +1,21 @@
+@charset "utf-8";
+
+.sending_form {
+    color: rgb(0, 126, 184);
+}
+
+.references {
+    color: rgb(0, 126, 184);
+    background-color: white;
+    height: 50px;
+}
+
+/*meiji_restoration.html*/
+.container {
+    padding: 40px 15px;
+    background-color: white;
+}
+
+.table_references {
+    color:black
+}

@@ -1,0 +1,96 @@
+@charset "utf-8";
+
+* {
+    box-sizing: border-box;
+    margin: 10;
+    padding: 0;
+    background-color: white;
+}
+
+.anime_url_wrap {
+    background-color: white;
+    text-align: left;
+    width: 40em;
+    font-weight: bold;
+    border: solid;
+}
+
+.dropdown__lists {
+    display: flex;
+}
+
+.dropdown__list {
+    width: 20%;
+    height: 60px;
+    background-color: #E5F0F8;
+    position: relative;
+    transition: all .3s;
+}
+.dropdown__list:hover {
+    background-color: #0071BB;
+}
+.dropdown__list:not(:first-child)::before {
+    content: "";
+    width: 1px;
+    height: 100%;
+    background-color: #fff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: all .3s;
+}
+.dropdown__list:hover::before {
+    background-color: #0071BB;
+}
+.dropdown__list a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    color: #1b4059;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    transition: all .3s;
+}
+.dropdown__list:hover a {
+    color: #fff;
+}
+
+.dropdown__list:hover .dropdown__lists {
+    visibility: visible;/*Gナビメニューにホバーしたら表示*/
+    opacity: 1;/*不透明度1*/
+}
+
+.sending_form {
+    background-color: greenyellow;
+    padding-top: 2px;
+    padding-right: 10px;
+    padding-bottom: 2px;
+    margin-top: 10px;
+    font-weight: bold;
+    text-align: left;
+    width: 30em;
+    border: solid black 1px;
+}
+
+.url_list {
+    background-color: white;
+    text-align: left;
+    width: 40em;
+    font-weight: bold;
+    border: solid;
+}
+
+.Inquiry_Post_div {
+    background-color: #FFB266;
+    padding-top: 2px;
+    padding-right: 20px;
+    padding-bottom: 6px;
+    font-weight: bold;
+    text-align: left;
+    width: 30em;
+    border: solid;
+}

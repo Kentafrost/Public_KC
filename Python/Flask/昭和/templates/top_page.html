@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="clock.css">
+    <link rel="stylesheet" href="top_page.css">
+    
+    <style>
+        body {background-color: lightblue}
+        h1 {font: red; font-size: 16 px}
+        h3 {
+            font: black;
+            font-size: 18px
+            }
+        p {color: black}
+
+    </style>
+
+    <br><title>{{ title }}</title></br> 
+
+    <!--時間ごとによるMSG-->
+    <h3><p> {{MSG}}{{ name }}さん。</h3>
+</head>
+
+<body>
+    <!--音楽かける-->
+    <div class="audio_wrap">
+        <div class="audio_button"></div>
+        <audio id="audio" src="7971.mp3" loop>
+          あなたのブラウザーは <code>audio</code> 要素をサポートしていません。
+        </audio>
+      </div>
+
+      音楽オンオフボタン<script src="./static/js/audio.js"></script>
+
+
+    以下、現在の時刻です。
+    <div class="container">
+        <div class="clock">
+          <p class="clock-date"></p>
+          <p class="clock-time"></p>
+          
+          <script src="./static/js/clock.js"></script>
+        </div>
+    </div>
+
+        <big><font color="red"> ゆっくりしていってね!!! </big>
+        <p><img src="static/images/yukkuri.jpg" alt="サンプル画像が表示されます"></br></p>
+    </p>
+    </font>
+
+    <p>以下、こちらのサイトの集計結果です。
+        <div class="graph"><ref src="./test.png" alt="集計結果"></div>
+    </p>
+
+
+    <p><h4>以下、サイトのURLです。</h4></p>
+    
+    <!--プルダウンメニュー選択すると右に画像出るようにする-->
+    <div class="anime_url_wrap">
+        <ul class="dropdown__lists">
+            <li class="dropdown__list"><a href="/dunbine">聖戦士ダンバイン</a></li>
+            <li class="dropdown__list"><a href="/votoms">装甲機兵ボトムズ</a></li></p>
+            <li class="dropdown__list"><a href="/yamato">宇宙戦艦ヤマト</a></li></p>
+        </ul>
+    </div>
+
+    <!--左側に並べてみる-->
+    <br><img src="static/images/showa_anime/aura_butler_dunbine.jpg" >聖戦士ダンバイン</br>
+    <br><img src="static/images/showa_anime/votoms_armored_trooper.jpg" >装甲機兵ボトムズ</br>
+    <br><img src="" >宇宙戦艦ヤマト</br>
+
+
+    <!--DBへの送信フォーム-->
+    <br>
+        <form action="/sampleform-post" method="post">
+        <div class="form-sending">
+            <label for="name">ハンドルネーム：</label><input type="text" name="name"</input>
+            <label for="mail">メールアドレス：</label><input type="text" name="mail"</input>
+            <label for="questionaire">アンケート：</label><input type="text" name="questionaire" id="questionaire"></input>
+            <label for="point">点数：</label><input type="text" name="point" id="point"></input>
+
+        <br><button type="submit" onclick="ShowInquiryMessage">送信</button></br>
+        <!--スクリプトでメッセージ出す-->
+        <script>
+            function ShowInquiryMessage() {
+                alert("メッセージを送信しました。")
+            }
+        </script>
+    
+        </div>
+        </form>
+    </br>
+
+    <!--メールでの問い合わせ内容-->
+    <div class="sending_form">
+        <form action="/inquiry_post" method="post"> 
+        <!-- <address> -->
+            ご質問がある場合は、下記に記載したうえで送信ボタンをクリックすることで、お問合せください。</br>
+        
+            <!--メール内容を入れていく。別のHTMLファイルに移行して、そこから入れる?-->
+        <br>
+            <label for="Sender_Address">貴方のメールアドレス：
+            <p>
+                <div class="Sender_address_div"></label><input type="text" name="Sender_Address"</input></div>
+            </p>
+            </label>
+            
+            <!--プルダウンで選択項目-->
+            <select name="inquiry_category_pulldown">
+                <option value="記事の内容">記事の内容</option>
+                <option value="改善案">改善案</option>
+                <option value="苦情">苦情</option>
+            </select>
+
+            送信内容：
+            <p><label for="Inquiry_Post"></p>
+                <p>
+                    <div class="Inquiry_Post_div"></label>
+                        <input type="text" name="Inquiry_Post"</input>
+                    </div>
+                </p>
+            </label>
+
+            <p><button type="submit" onclick="ShowSubmitMessage">送信</button></p>
+        
+            <script>
+                fuction ShowSubmitMessage() {
+                    alert("メール送信完了しました。");
+                }
+            </script>
+        </form>
+    </div>
+
+</body>
+</html>

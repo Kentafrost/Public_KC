@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+
+<!--CSSファイルはstatic/css/傘下に置く-->
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+
+    <style>
+        body { background-color: lightblue}
+        head { background-color: lightgreen}
+    </style>
+
+    <link rel="stylesheet" href="{{url_for('static', filename='css/showa_anime_explanation.css')}}"/>
+
+    <div class="common"> 
+        <p>
+            User名: "{{name}}"   
+        </p> 
+
+        <!--ブロックはblock.htmlから参照-->
+        <a href="/{{name}}">ホーム画面に戻ります。</a>
+    </div>
+</head>
+
+<body>
+    <!--歴史解説部分-->
+    {% block block_yamato%} {% endblock %}
+
+
+    <!--他ページのURLをまとめてリスト化しておく(右揃え)-->
+    <br>以下、別URLの解説サイトのURL</br>
+
+    <br><div class="url_list">
+        <li>
+            <a href="/dunbine"> 聖戦士ダンバイン </a>
+            <a href="/votoms"> 装甲機兵ボトムズ </a>
+                
+
+        </li>
+    </div></br>
+
+</body>
+</html>

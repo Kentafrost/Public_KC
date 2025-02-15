@@ -16,7 +16,6 @@ Parameters:
     Default: "topic_test"
 
 Resources:
-  #Lambda用IAMロール(SNSトピックアクセス用に許可する)
   LambdaIamRole:
     Type: AWS::IAM::Role
     Properties:
@@ -60,11 +59,11 @@ Resources:
           def lambda_handler(event, context):
             dt_now = datetime.datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')
 
-            #client.publish{
-            #  TopicArn: sns_arn,
-            #  Subject: 'Lambda SNS メール送信' + str(dt_now),
-            #  Message: 'SNSでメール送信済み\n確認できました？\n' + str(dt_now)
-            #}
+            client.publish{
+              TopicArn: sns_arn,
+              Subject: 'Lambda SNS メール送信' + str(dt_now),
+              Message: 'SNSでメール送信済み\n確認できました?\n' + str(dt_now)
+            }
 
       Environment:
         Variables:
