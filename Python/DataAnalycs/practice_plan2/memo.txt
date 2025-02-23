@@ -1,0 +1,8 @@
+①: get some csv file path from a csv file, to make data frame.(1 loop)
+②: 
+③: convert data separately to put into different database. (using some functions)
+
+
+memo
+Ubuntu user; kenfrost213
+PW; yukkuri12311004
