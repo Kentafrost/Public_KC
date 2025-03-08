@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def calc_price(cur, df, str):
+def calc_price(df, str):
     # Initialize necessary variables
     monthly_data = {}  # Dictionary to store data by month
     full_dict = {'month': [], 'avg': [], 'max': [], 'min': []}
@@ -43,11 +43,17 @@ def calc_price(cur, df, str):
             full_dict['min'].append(min_price)
         return full_dict
     except Exception as e:
-        print(f"Error calculating averages: {e}")
+        print(f"Error calculating average, max, min: {e}")
 
 
-def plot_graph(full_dict, graph_name, path):
+def plot_graph(full_dict, graph_name, path, cur):
     # Extract data for plotting
+    # Create a table if it doers not exist
+    try:
+        cur.execute("CREATE TABLE IF NOT EXISTS price_trends_{} (month VARCHAR(10), avg_price FLOAT, max_price FLOAT, min_price FLOAT)".format(graph_name))
+    except Exception as e:
+        print(f"Error creating table: {e}")
+    
     months = full_dict['month']
     avg_prices = full_dict['avg']
     max_prices = full_dict['max']

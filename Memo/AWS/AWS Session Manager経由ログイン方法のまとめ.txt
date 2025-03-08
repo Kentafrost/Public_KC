@@ -1,0 +1,35 @@
+リモート踏み台
+⇒インスタンス(パブリック)にpingはOK
+
+　どうアクセスする?(Puttyでアクセス?)
+
+　Session Managerでアクセスするには何が必要?
+
+　①：SSMエージェントをインスタンス自体にインストール(Amazon Linuxならデフォルトでは入ってない)
+　⇒インストール方法①：インスタンス作成時にユーザープロフィールで入れる。
+
+　②：IAMロールをインスタンスにアタッチ必要
+　⇒AmazonSSMManagedInstanceCore(これのみ)
+　
+　役に立ったサイト：
+　https://repost.aws/ja/knowledge-center/install-ssm-agent-ec2-linux
+　https://dev.classmethod.jp/articles/session-manager-pattern/
+
+
+　③：VPCエンドポイントをアタッチする。
+　com.amazonaws.region.ssm
+　com.amazonaws.region.ec2messages
+　com.amazonaws.region.ssmmessages
+　com.amazonaws.region.s3
+
+　例：com.amazonaws.us-east1.ssm
+
+  ④：アウトバウンドで自分のセキュリティグループ自体の443ポートを許可する!!
+　　　Aというインスタンスなら、Aに結合しているセキュリティグループの443ポートのアウトバウンドを許可
+　　　念のためインバウンドをオンにする。
+　　
+
+　⑤：インスタンスの再起動や画面再読み込み等するとSession Managerでログイン可かも。
+
+　SSMエージェントの更新する。
+　⇒https://repost.aws/ja/knowledge-center/install-ssm-agent-ec2-linux

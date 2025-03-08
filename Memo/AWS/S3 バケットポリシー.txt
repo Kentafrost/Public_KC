@@ -1,0 +1,33 @@
+S3バケットポリシー アクセス制限
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:getobject",
+            "Resource": "arn:aws:s3:::japanese-explaination-bucket/*"
+        }
+    ]
+}
+
+
+VPC エンドポイント
+
+{
+"Version": "2012-10-17",
+"Id": "Policyxxxxxxxxxxxxx",
+"Statement": [
+{
+"Sid": "Access-to-S3",
+"Effect": "Allow",
+"Principal": "*",
+"Action": "s3:*",
+"Resource": [
+"arn:aws:s3:::YOUR-S3-BUCKET-NAME",
+"arn:aws:s3:::YOUR-S3-BUCKET-NAME/*"
+]
+}
+]
+}

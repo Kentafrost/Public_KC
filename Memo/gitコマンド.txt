@@ -1,0 +1,12 @@
+git branch checkout ～：今のブランチから別のブランチに切り替える
+git branch ～：ブランチ作成
+git branch：ブランチのリスト見る
+git remote add origin https:～：WEBサイト(GitHub)アクセス
+
+git add 保存するもの：stageに移行
+git commit -m "Message"：コミットする
+git push origin ブランチ名：ブランチにpushする
+git restore
+
+git push origin ブランチ名：pushする
+git checkout ブランチ名：ブランチ変更

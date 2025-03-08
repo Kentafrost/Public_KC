@@ -1,0 +1,47 @@
+よく使うMySQLコマンド
+
+MySQLにログインする
+mysql -u ユーザー名 -p
+パスワード入力 ⇒ MySQLログイン
+
+mysql -u ユーザ名 -p -h ホスト名 -P ポート番号
+
+show databases;
+
+create database データベース名;
+
+データベースの選択
+use データベース名
+
+データベース中のテーブル一覧の表示
+show tables;
+
+テーブル作成
+mysql > CREATE TABLE [テーブル名] (
+  [フィールド名] [データ型] [オプション]
+) ENGINE=[InnoDB/MyISAM] DEFAULT CHARSET=[文字コード];
+
+例(m_usersというテーブルにカラムを作成していく)：
+mysql > CREATE TABLE `m_users` (
+          `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "ID",
+          `user_name` VARCHAR(100) NOT NULL COMMENT "ユーザー名",
+          `mail_address` VARCHAR(200) NOT NULL COMMENT "メールアドレス",
+          `password` VARCHAR(100) NOT NULL COMMENT "パスワード",
+          `created` datetime DEFAULT NULL COMMENT "登録日",
+          `modified` datetime DEFAULT NULL COMMENT "更新日"
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+インサート例(m_usersというテーブルのカラムに値を入れていく)
+mysql > INSERT INTO m_users (user_name, mail_address, password, created, modified)
+          VALUES ("Qii Taro", "qiitaro@hoge.com", "123123", now(), now())
+
+更新時
+mysql > UPDATE m_users SET user_name="Qii Takao", mail_address="qiitakao@hoge.com" WHERE id = 5;
+
+削除時
+mysql > DELETE FROM [テーブル名]　　　テーブル内のデータ全削除
+mysql > DELETE FROM [テーブル名] WHERE [条件式]　部分削除
+
+
+Select カラム名 from テーブル名 Where 条件
+

@@ -1,0 +1,11 @@
+import base64
+
+def main(event, context):
+    response = {
+        "statusCode": 200,
+        "headers":{
+            "Content-Type": "application/octet-stream",
+        },
+        "body": base64.b64encode(open('./binary_object', 'rb').read()).decode('utf-8'),
+        "isBase64Encoded": True}
+    return response

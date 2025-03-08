@@ -1,0 +1,96 @@
+やりたいこと：Lambda関数でIAMロールのAssumePolicyを書き換える。
+
+
+IAMロール：許可ポリシーと、信頼ポリシー(AssumePolicy)で構成される。
+
+Permissionポリシー：ロールを付与することで、実行できることを記述する。どのリソースに読み取り許可を与えるとか..
+
+
+信頼ポリシー・・・このロールにアクセスできるリソース、アカウントのIDを入れる
+　sts:AssumeRole以外のActionは指定不可
+
+　アクセスできるサービスは許可する。例：Lambda関数のアクセス許可入れる ⇒ Lambda関数にこのロールを付与することができる。
+
+
+
+・スイッチ先のIAMロール
+　
+　Permission：Lambda関数、IAMポリシー許可
+
+例：
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Statement1",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::204806963442:role/test-switch",
+                    "arn:aws:iam::204806963442:user/test_local"
+                ],
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+
+
+スイッチ元のロール(Lambda関数ある方)
+
+
+★Permission(このポリシーでアクセスできるサービス、リソースを指定)：
+Permissions defined in this policy document specify which actions are allowed or denied. To define permissions for an IAM identity (user, user group, or role), attach a policy to it
+
+IAMロール、Lambda処理すること、
+
+
+Permission：スイッチ先のロールへのアクセス許可いれる
+
+⇒スイッチロールしたうえで、信頼ポリシーを更新するなら、
+　sts:AssumeRoleの許可入れた上で、iam:UpdateAssumeRoleの実行許可を入れる。
+
+
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"iam:*",
+				"lambda:*"
+			],
+			"Resource": [
+				"arn:aws:iam::204806963442:role/test-iamcheck-role"
+			]
+		}
+	]
+}
+
+
+
+　信頼ポリシー(どのリソース, IDがこのロールにアクセスできるか?)：アクセス元のID(or Role)
+　Entities that can assume this role under specified conditions.と記載あり
+
+　※アカウントID, アクセスできるサービスを定義すること
+　　この場合だと、Lambda関数と現状アクセスするアカウントIDを定義しておく
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Statement1",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::204806963442:user/test_local",
+                    "arn:aws:iam::204806963442:role/test-switch"
+                ]
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
